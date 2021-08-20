@@ -8,9 +8,27 @@ whether static or dynamic analysis is used.
 
 Building with CMake
 ==============================================
+## To run
+
+- Add conda to your bashrc
+```bash
+. "/data/miniconda3/etc/profile.d/conda.sh"
+```
+
+```bash
+conda activate
+```
+```bash
+export PATH=/data/rvv/bin/:/data/rvv-llvm/bin:$PATH 
+# This step can fail if you don't have wllvm in the path or you have not included gnu and clang in your path
+# LLVM_COMPILER is NOT A PATH to clang IT IS THE NAME OF THE CLANG EXECUTABLE
+LLVM_COMPILER=clang BINUTILS_TARGET_PREFIX=riscv64-unknown-elf make 
+```
+
 1. Clone the demo repository.
 
-        git clone https://github.com/nsumner/llvm-demo.git
+        git clone git@github.com:sfu-arch/llvm-demo.git
+
 
 2. Create a new directory for building.
 
@@ -24,7 +42,10 @@ Building with CMake
 
         cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=True \
             -DLLVM_DIR=</path/to/LLVM/build>/lib/cmake/llvm/ ../llvm-demo
-
+To use `LLVM-11` on server-01:
+```
+-DLLVM_DIR=/data/llvm-11/lib/cmake/llvm
+```
 5. Run make inside the build directory:
 
         make

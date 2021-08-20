@@ -8,7 +8,7 @@ whether static or dynamic analysis is used.
 
 Building with CMake
 ==============================================
-## To run
+## To run on server01
 
 - Add conda to your bashrc
 ```bash
@@ -19,10 +19,8 @@ Building with CMake
 conda activate
 ```
 ```bash
-export PATH=/data/rvv/bin/:/data/rvv-llvm/bin:$PATH 
-# This step can fail if you don't have wllvm in the path or you have not included gnu and clang in your path
-# LLVM_COMPILER is NOT A PATH to clang IT IS THE NAME OF THE CLANG EXECUTABLE
-LLVM_COMPILER=clang BINUTILS_TARGET_PREFIX=riscv64-unknown-elf make 
+export PATH=/data/rvv/bin/:/data/llvm-11/bin:$PATH
+
 ```
 
 1. Clone the demo repository.
@@ -47,8 +45,7 @@ To use `LLVM-11` on server-01:
 -DLLVM_DIR=/data/llvm-11/lib/cmake/llvm
 ```
 5. Run make inside the build directory:
-
-        make
+        LLVM_COMPILER=clang BINUTILS_TARGET_PREFIX=riscv64-unknown-elf make -j
 
 This produces a callcounter tool called bin/callcounter and supporting
 libraries in lib/.

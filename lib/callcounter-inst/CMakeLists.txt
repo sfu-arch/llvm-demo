@@ -6,6 +6,8 @@ llvm_map_components_to_libnames(REQ_LLVM_LIBRARIES
 add_library(callcounter-inst
   StaticCallCounter.cpp
   DynamicCallCounter.cpp
+  FunctionMemoizer.cpp
+  FunctionInstCounter.cpp
 )
 target_link_libraries(callcounter-inst
   INTERFACE
@@ -24,6 +26,9 @@ set_target_properties(callcounter-inst PROPERTIES
 add_library(callcounter-lib MODULE
   StaticCallCounter.cpp
   DynamicCallCounter.cpp
+  FunctionMemoizer.cpp
+  FunctionInstCounter.cpp
+
 )
 target_link_libraries(callcounter-lib
   INTERFACE

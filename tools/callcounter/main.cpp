@@ -39,6 +39,7 @@
 
 #include "DynamicCallCounter.h"
 #include "StaticCallCounter.h"
+#include "FunctionMemoizer.h"
 
 #include "config.h"
 
@@ -77,6 +78,13 @@ static cl::opt<AnalysisType> analysisType{
                ),
     cl::Required,
     cl::cat{callCounterCategory}};
+
+static cl::opt<string> functionName{"f",
+                                    cl::desc{"Select function to be memoized:"},
+                                    cl::value_desc{"function_name"},
+                                    cl::init(""),
+                                    cl::Optional,
+                                    cl::cat{callCounterCategory}};
 
 static cl::opt<string> outFile{"o",
                                cl::desc{"Filename of the instrumented program"},
@@ -298,7 +306,7 @@ instrumentForDynamicCount(Module& m) {
 
   // Build up all of the passes that we want to run on the module.
   legacy::PassManager pm;
-  pm.add(new callcounter::DynamicCallCounter());
+  pm.add(new memoizer::FunctionMemoizer(functionName));
   pm.add(createVerifierPass());
   pm.run(m);
 
@@ -354,7 +362,6 @@ main(int argc, char** argv) {
   SMDiagnostic err;
   LLVMContext context;
   unique_ptr<Module> module = parseIRFile(inPath.getValue(), err, context);
-
   if (!module.get()) {
     errs() << "Error reading bitcode file: " << inPath << "\n";
     err.print(argv[0], errs());

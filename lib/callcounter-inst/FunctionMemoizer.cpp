@@ -24,6 +24,12 @@ char FunctionMemoizer::ID = 0;
 
 bool
 FunctionMemoizer::runOnModule(Module& m) {
+    auto &context = m.getContext();
+    voidTy  = Type::getVoidTy(context);
+    i64Ty   = Type::getInt64Ty(context);
+    i8PtrTy = Type::getInt8PtrTy(context);
+    i32Ty   = Type::getInt32Ty(context);
+  
     FunctionInstCounter fic;
     for (auto& f : m)
         if (f.getName() == this->functionName) {
@@ -60,5 +66,9 @@ void FunctionMemoizer::visitCallInst(CallInst& c) {
     ResultHeaderStrPtr->insertAfter(&c);
     CallInst * int32_call = CallInst::Create(Printf, {ResultHeaderStrPtr, c.getArgOperand(0), &c}, "", c.getNextNode()->getNextNode());
 
+    // Call insert function
+    auto *insert_arg_types = FunctionType::get(voidTy, {i32Ty, i32Ty}, false);
 
+    auto on_insert = m.getOrInsertFunction("MEMOIZER_insertData", insert_arg_types);
+    CallInst *insert_call = CallInst::Create(on_insert, {c.getArgOperand(0), &c}, "", int32_call->getNextNode());
 }

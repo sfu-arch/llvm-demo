@@ -19,15 +19,11 @@ namespace memoizer {
 struct FunctionMemoizer : public llvm::ModulePass, llvm::InstVisitor<FunctionMemoizer> {
   static char ID;
   std::string functionName;
-  llvm::DenseMap<llvm::Function*, uint64_t> ids;
-  llvm::DenseSet<llvm::Function*> internal;
 
   FunctionMemoizer(std::string n) : llvm::ModulePass(ID), functionName(n) { }
 
   bool runOnModule(llvm::Module& m) override;
-
-//   void handleCalledFunction(llvm::Function& f, llvm::FunctionCallee counter);
-//   void handleInstruction(llvm::CallBase& cb, llvm::FunctionCallee counter);
+  void visitCallInst(llvm::CallInst& c);
 };
 
 

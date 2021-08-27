@@ -20,7 +20,7 @@ bool
 FunctionInstCounter::runOnFunction(Function& f) {
     visit(f);
 
-    errs() << "############## " << f.getName() << " ##############\n";
+    errs() << "############## FUNCTION: " << f.getName() << " ##############\n";
     errs() << "Input Count: " << f.arg_size() << "\n";
     errs() << "Load Count: " << load_count << "\n";
     errs() << "Store Count: " << store_count << "\n";

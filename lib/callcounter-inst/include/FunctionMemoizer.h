@@ -24,6 +24,7 @@ struct FunctionMemoizer : public llvm::ModulePass, llvm::InstVisitor<FunctionMem
 
   bool runOnModule(llvm::Module& m) override;
   void visitCallInst(llvm::CallInst& c);
+  void callPrintf(llvm::Instruction *I, char *format, std::vector<llvm::Value *> args);
 
     // variables
   llvm::Type *voidTy;

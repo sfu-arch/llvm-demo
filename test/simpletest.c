@@ -15,6 +15,10 @@ int main() {
   b();
   for (int i = 0; i < 10; i++) 
     milad(i);
+
+  for (int i = 0; i < 10; i++) 
+    milad(i);
+
   printf("Done!\n");
   return 0;
 }

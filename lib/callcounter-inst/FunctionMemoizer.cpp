@@ -48,6 +48,11 @@ FunctionMemoizer::runOnModule(Module& m) {
                 inst_vec.push_back(&i);
     for (auto& i : inst_vec) 
         visit(i);
+    
+    auto *print_status_type = FunctionType::get(voidTy, {}, false);
+    auto print_status_func = m.getOrInsertFunction("MEMOIZER_printStats", print_status_type);
+    llvm::appendToGlobalDtors(m, (Function*) print_status_func.getCallee(), 0);
+
     return true;
 }
 
@@ -65,7 +70,6 @@ void FunctionMemoizer::visitCallInst(CallInst& c) {
 
 
     // Check whether the input is already in the table
-    auto *function_input_type = argVal->getType();
     auto *exist_arg_types = FunctionType::get(i32Ty, {i8PtrTy, i32Ty}, false);
     auto on_exist = m.getOrInsertFunction("MEMOIZER_existEntry", exist_arg_types);
     auto DL = m.getDataLayout();

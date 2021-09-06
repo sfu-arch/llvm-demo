@@ -30,7 +30,7 @@ FunctionMemoizer::runOnModule(Module& m) {
     i64Ty   = Type::getInt64Ty(context);
     i8PtrTy = Type::getInt8PtrTy(context);
     i32Ty   = Type::getInt32Ty(context);
-  
+
     FunctionInstCounter fic;
     for (auto& f : m)
         if (f.getName() == this->functionName) {
@@ -54,13 +54,26 @@ FunctionMemoizer::runOnModule(Module& m) {
 void FunctionMemoizer::visitCallInst(CallInst& c) {
     if (c.getCalledFunction()->getName() != functionName) 
         return;
-
     auto &m = *c.getModule();
 
+    // store arg[0] and call runtime functions with it
+    auto argVal = c.getArgOperand(0);
+    auto argI = new AllocaInst(argVal->getType(), Type::getInt8PtrTy(c.getContext())->getPointerAddressSpace(), "", &c);
+    auto sI = new StoreInst(argVal, argI, &c);
+    auto stored = sI->getPointerOperand();
+    auto bc = new BitCastInst(stored, i8PtrTy, "", sI);
+
+
     // Check whether the input is already in the table
-    auto *exist_arg_types = FunctionType::get(i32Ty, {i32Ty}, false);
+    auto *function_input_type = argVal->getType();
+    auto *exist_arg_types = FunctionType::get(i32Ty, {i8PtrTy, i32Ty}, false);
     auto on_exist = m.getOrInsertFunction("MEMOIZER_existEntry", exist_arg_types);
-    CallInst *exist_call = CallInst::Create(on_exist, {c.getArgOperand(0)}, "", &c);
+    auto DL = m.getDataLayout();
+    auto Sz = DL.getTypeStoreSize(argVal->getType());
+    Value *exist_call_args[] = {bc, ConstantInt::get(i32Ty, GetTypeEnum(argVal))};
+    CallInst *exist_call = CallInst::Create(on_exist, exist_call_args, "", &c);
+    // std::vector<Value*> args = {argVal, exist_call};
+    // callPrintf(exist_call, "exists res: %lf, %d\n", args);
 
     auto *zero = Constant::getNullValue(i32Ty);
     ICmpInst* if_cond = new ICmpInst(&c, ICmpInst::ICMP_EQ, zero, exist_call);
@@ -68,21 +81,32 @@ void FunctionMemoizer::visitCallInst(CallInst& c) {
     SplitBlockAndInsertIfThenElse(if_cond, &c, &then_inst, &else_inst, nullptr);
 
     // Call get Entry function
-    auto *getEntry_arg_types = FunctionType::get(i32Ty, {i32Ty}, false);
+    auto *getEntry_arg_types = FunctionType::get(i8PtrTy, {i8PtrTy, i32Ty}, false);
     auto on_get = m.getOrInsertFunction("MEMOIZER_getEntry", getEntry_arg_types);
-    CallInst *get_call = CallInst::Create(on_get, {c.getArgOperand(0)}, "", else_inst);
-
-    // Call insert function
-    auto *insert_arg_types = FunctionType::get(voidTy, {i32Ty, i32Ty}, false);
-    auto on_insert = m.getOrInsertFunction("MEMOIZER_insertEntry", insert_arg_types);
-    CallInst *insert_call = CallInst::Create(on_insert, {c.getArgOperand(0), &c}, "", c.getNextNode());
-
-    // Insert PHI node after if statement
-    auto *phi = PHINode::Create(i32Ty, 2, "memoized_phi", &c);
+    CallInst *get_call = CallInst::Create(on_get, exist_call_args, "", else_inst);
+    // result of the getEntry() is a void*. We need to cast it to the desired type
+    auto *cast_result = new BitCastInst(get_call, c.getType()->getPointerTo(), "", else_inst);
+    auto *load_entry = new LoadInst(c.getType(), cast_result, "", else_inst);
+    
+    // Insert PHI node after if-else statement
+    auto *phi = PHINode::Create(c.getType(), 2, "memoized_phi", &c);
     c.replaceAllUsesWith(phi);
-    phi->addIncoming(get_call, else_inst->getParent());
+    phi->addIncoming(load_entry, else_inst->getParent());
     phi->addIncoming(&c, then_inst->getParent());
     c.moveBefore(then_inst);
+
+    // Call insert function
+    auto *insert_arg_types = FunctionType::get(voidTy, {i8PtrTy, i32Ty, i8PtrTy, i32Ty}, false);
+    auto on_insert = m.getOrInsertFunction("MEMOIZER_insertEntry", insert_arg_types);
+        // store return value of c and call runtime functions with it
+    auto c_result = new AllocaInst(c.getType(), Type::getInt8PtrTy(c.getContext())->getPointerAddressSpace(), "", &c);
+    auto c_result_store_inst = new StoreInst(&c, c_result, then_inst);
+    auto c_stored = c_result_store_inst->getPointerOperand();
+    auto c_result_bc = new BitCastInst(c_stored, i8PtrTy, "", c_result_store_inst);
+    
+    Value *insert_call_args[] = {bc, ConstantInt::get(i32Ty, GetTypeEnum(argVal)), c_result_bc, ConstantInt::get(i32Ty, GetTypeEnum(&c))};
+    CallInst *insert_call = CallInst::Create(on_insert, insert_call_args, "", then_inst);
+
 }
 
 
@@ -118,3 +142,26 @@ FunctionMemoizer::callPrintf(Instruction *I, char *format, std::vector<Value *> 
     print_args.insert(print_args.end(), args.begin(), args.end());
     CallInst::Create(Printf, print_args, "", ResultHeaderStrPtr->getNextNode());
 }
+
+int 
+FunctionMemoizer::GetTypeEnum(Value *v)
+{
+    if (v->getType()->isFloatTy())
+        return FLT;
+    else if (v->getType()->isDoubleTy())
+        return DBL;
+    else if (v->getType()->isIntegerTy(1))
+        return BOL;
+    else if (v->getType()->isIntegerTy(8))
+        return CHR;
+    else if (v->getType()->isIntegerTy(16))
+        return HLF;
+    else if (v->getType()->isIntegerTy(32))
+        return WHL;
+    else if (v->getType()->isIntegerTy(64))
+        return LNG;
+    else if (v->getType()->isPointerTy())
+        return PTR;
+
+    return INVALID;
+} //gettypeenum

@@ -12,6 +12,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include <string>
 #include "llvm/IR/InstVisitor.h"
+#include "../../callcounter-rt/utilities.h"
+
 
 namespace memoizer {
 
@@ -25,6 +27,8 @@ struct FunctionMemoizer : public llvm::ModulePass, llvm::InstVisitor<FunctionMem
   bool runOnModule(llvm::Module& m) override;
   void visitCallInst(llvm::CallInst& c);
   void callPrintf(llvm::Instruction *I, char *format, std::vector<llvm::Value *> args);
+  
+  int GetTypeEnum(llvm::Value *v);
 
     // variables
   llvm::Type *voidTy;

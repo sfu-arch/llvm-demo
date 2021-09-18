@@ -39,7 +39,7 @@ FunctionMemoizer::runOnModule(Module& m) {
                 return false;
             }
             // Print function stats
-            // fic.runOnFunction(f);
+            fic.runOnFunction(f);
         }
     std::vector<Instruction*> inst_vec;
     for (auto& f : m)
